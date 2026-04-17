@@ -29,16 +29,19 @@ export default function PayPage() {
         return;
       }
 
-      if (data.used) {
+       if (data.used && data.code !== 'MBTITEST') {
         setStatus('error');
         setErrorMsg('该验证码已被使用');
         return;
       }
 
-      await supabase
-        .from('payment_codes')
-        .update({ used: true, used_at: new Date().toISOString() })
-        .eq('code', trimmedCode);
+      // 非永久码才标记为已使用
+      if (data.code !== 'MBTITEST') {
+        await supabase
+          .from('payment_codes')
+          .update({ used: true, used_at: new Date().toISOString() })
+          .eq('code', trimmedCode);
+      }
 
       localStorage.setItem('mbti_pro_unlocked', 'true');
       setStatus('success');
