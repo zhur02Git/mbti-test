@@ -8,6 +8,12 @@ import LoadingReport from './LoadingReport';
 type Phase = 1 | 2 | 3;
 type AppState = 'test' | 'phase-transition' | 'loading' | 'result';
 
+const ALL_TYPES = ['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
+
+function randomType() {
+  return ALL_TYPES[Math.floor(Math.random() * ALL_TYPES.length)];
+}
+
 function calculateMBTI(answers: Record<number, number>): string {
   const scores: Record<Dimension, number> = { EI: 0, SN: 0, TF: 0, JP: 0 };
   const counts: Record<Dimension, number> = { EI: 0, SN: 0, TF: 0, JP: 0 };
@@ -43,11 +49,11 @@ const PHASE_MESSAGES = {
   },
 };
 
-export default function MbtiTest() {
-  const [appState, setAppState] = useState<AppState>('test');
+export default function MbtiTest({ debugMode = false }: { debugMode?: boolean }) {
+  const [appState, setAppState] = useState<AppState>(debugMode ? 'result' : 'test');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<string | null>(debugMode ? randomType() : null);
   const [selected, setSelected] = useState<number | null>(null);
   const [phase, setPhase] = useState<Phase>(1);
 
@@ -160,8 +166,14 @@ export default function MbtiTest() {
   }
 
   // ── 题目页 ──
-  const circles = [1, 2, 3, 4, 5];
   const canGoBack = currentIndex > 0;
+  const circles = [
+    { val: 1, label: null },
+    { val: 2, label: null },
+    { val: 3, label: '都有' },
+    { val: 4, label: null },
+    { val: 5, label: null },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4 py-10">
@@ -208,13 +220,8 @@ export default function MbtiTest() {
 
       {/* 圆圈选择器 */}
       <div className="w-full max-w-md flex justify-between items-center px-2 mb-2">
-        {circles.map((val) => {
+        {circles.map(({ val, label }) => {
           const isSelected = selected === val || (answers[currentQuestion.id] === val && selected === null);
-
-          const sizeClass =
-            val === 1 || val === 5 ? 'w-14 h-14' :
-            val === 2 || val === 4 ? 'w-10 h-10' :
-            'w-8 h-8';
 
           const borderColor =
             val <= 2
@@ -223,23 +230,21 @@ export default function MbtiTest() {
               ? isSelected ? 'border-violet-400 bg-violet-400' : 'border-violet-700'
               : isSelected ? 'border-gray-400 bg-gray-400' : 'border-gray-600';
 
-          const isMiddle = val === 3;
-
           return (
             <button
               key={val}
               onClick={() => handleSelect(val)}
-              className={`${sizeClass} rounded-full border-2 transition-all duration-200 flex flex-col items-center justify-center gap-0.5
+              className={`w-14 h-14 rounded-full border-2 transition-all duration-200 flex flex-col items-center justify-center
                 ${borderColor}
                 ${isSelected ? 'scale-110' : 'hover:scale-105 hover:opacity-80'}
               `}
             >
               {isSelected ? (
-                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
-              ) : isMiddle ? (
-                <span className="text-gray-400 text-xs font-medium leading-tight text-center">都有</span>
+              ) : label ? (
+                <span className="text-gray-400 text-xs font-medium">{label}</span>
               ) : null}
             </button>
           );
