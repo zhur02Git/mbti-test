@@ -1,56 +1,112 @@
 'use client';
 
 import { useState } from 'react';
-import { questions, mbtiDescriptions, type Dimension } from '@/data/questions';
+import { questions, mbtiDescriptions, PHASE_1_END, PHASE_2_END, PHASE_3_END, type Dimension } from '@/data/questions';
 import ResultCard from './ResultCard';
+import LoadingReport from './LoadingReport';
 
-type Answer = 'A' | 'B';
+type Phase = 1 | 2 | 3;
+type AppState = 'test' | 'phase-transition' | 'loading' | 'result';
 
-function calculateMBTI(answers: Record<number, Answer>): string {
-  const scores: Record<Dimension, { a: number; b: number }> = {
-    EI: { a: 0, b: 0 },
-    SN: { a: 0, b: 0 },
-    TF: { a: 0, b: 0 },
-    JP: { a: 0, b: 0 },
-  };
+function calculateMBTI(answers: Record<number, number>): string {
+  const scores: Record<Dimension, number> = { EI: 0, SN: 0, TF: 0, JP: 0 };
+  const counts: Record<Dimension, number> = { EI: 0, SN: 0, TF: 0, JP: 0 };
 
   questions.forEach((q) => {
-    const answer = answers[q.id];
-    if (answer === 'A') scores[q.dimension].a++;
-    else if (answer === 'B') scores[q.dimension].b++;
+    const val = answers[q.id];
+    if (val !== undefined) {
+      scores[q.dimension] += val;
+      counts[q.dimension]++;
+    }
   });
 
-  const ei = scores.EI.a >= scores.EI.b ? 'E' : 'I';
-  const sn = scores.SN.a >= scores.SN.b ? 'S' : 'N';
-  const tf = scores.TF.a >= scores.TF.b ? 'T' : 'F';
-  const jp = scores.JP.a >= scores.JP.b ? 'J' : 'P';
+  const ei = (scores.EI / counts.EI) <= 3 ? 'E' : 'I';
+  const sn = (scores.SN / counts.SN) <= 3 ? 'S' : 'N';
+  const tf = (scores.TF / counts.TF) <= 3 ? 'T' : 'F';
+  const jp = (scores.JP / counts.JP) <= 3 ? 'J' : 'P';
 
   return `${ei}${sn}${tf}${jp}`;
 }
 
+const PHASE_MESSAGES = {
+  1: {
+    title: '第一阶段完成 🎯',
+    subtitle: '已初步定位你的人格类型',
+    desc: '接下来将探索你的深层隐藏人格，请继续',
+    next: '好的，继续测试',
+  },
+  2: {
+    title: '第二阶段完成 🔍',
+    subtitle: '人格轮廓已经逐渐清晰',
+    desc: '最后阶段将深度分析你的核心性格，请继续',
+    next: '开始最终测试',
+  },
+};
+
 export default function MbtiTest() {
+  const [appState, setAppState] = useState<AppState>('test');
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, Answer>>({});
+  const [answers, setAnswers] = useState<Record<number, number>>({});
   const [result, setResult] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Answer | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [phase, setPhase] = useState<Phase>(1);
 
   const currentQuestion = questions[currentIndex];
-  const progress = (currentIndex / questions.length) * 100;
-  const isLast = currentIndex === questions.length - 1;
+  const totalQuestions = questions.length;
+  const progress = (currentIndex / totalQuestions) * 100;
 
-  function handleSelect(choice: Answer) {
-    setSelected(choice);
+  function handleSelect(value: number) {
+    setSelected(value);
     setTimeout(() => {
-      const newAnswers = { ...answers, [currentQuestion.id]: choice };
+      const newAnswers = { ...answers, [currentQuestion.id]: value };
       setAnswers(newAnswers);
       setSelected(null);
-      if (isLast) {
+
+      const nextIndex = currentIndex + 1;
+
+      if (currentIndex + 1 === PHASE_1_END) {
+        setCurrentIndex(nextIndex);
+        setAppState('phase-transition');
+        setPhase(1);
+      } else if (currentIndex + 1 === PHASE_2_END) {
+        setCurrentIndex(nextIndex);
+        setAppState('phase-transition');
+        setPhase(2);
+      } else if (currentIndex + 1 === PHASE_3_END) {
         const mbti = calculateMBTI(newAnswers);
         setResult(mbti);
+        setAppState('loading');
       } else {
-        setCurrentIndex((i) => i + 1);
+        setCurrentIndex(nextIndex);
       }
-    }, 300);
+    }, 250);
+  }
+
+  function handlePrev() {
+    if (currentIndex === 0) return;
+    setSelected(null);
+    setCurrentIndex((i) => i - 1);
+    const prevIndex = currentIndex - 1;
+    if (prevIndex < PHASE_1_END) setPhase(1);
+    else if (prevIndex < PHASE_2_END) setPhase(2);
+    else setPhase(3);
+  }
+
+  function handlePhaseNext() {
+    setPhase((p) => (p === 1 ? 2 : 3) as Phase);
+    setAppState('test');
+  }
+
+  function handlePhaseBack() {
+    setCurrentIndex(currentIndex - 1);
+    setSelected(null);
+    if (phase === 1) setPhase(1);
+    else setPhase((p) => (p - 1) as Phase);
+    setAppState('test');
+  }
+
+  function handleLoadingDone() {
+    setAppState('result');
   }
 
   function handleRestart() {
@@ -58,24 +114,75 @@ export default function MbtiTest() {
     setAnswers({});
     setResult(null);
     setSelected(null);
+    setPhase(1);
+    setAppState('test');
   }
 
-  if (result) {
+  // ── 阶段过渡页 ──
+  if (appState === 'phase-transition') {
+    const msg = PHASE_MESSAGES[phase as 1 | 2];
+    return (
+      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-6">
+        <div className="w-full max-w-sm">
+          <div className="w-full h-52 bg-gradient-to-b from-violet-900/40 to-gray-900/40 rounded-2xl mb-8 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-6xl mb-3">{phase === 1 ? '🧠' : '🔮'}</div>
+              <div className="flex gap-1 justify-center">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className={`h-1.5 rounded-full transition-all ${i <= phase ? 'bg-violet-500 w-8' : 'bg-gray-700 w-4'}`} />
+                ))}
+              </div>
+            </div>
+          </div>
+          <h2 className="text-xl font-bold text-white text-center mb-2">{msg.title}</h2>
+          <p className="text-violet-300 text-sm text-center font-medium mb-2">{msg.subtitle}</p>
+          <p className="text-gray-400 text-sm text-center mb-8">{msg.desc}</p>
+          <button onClick={handlePhaseNext} className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-base transition-all mb-3">
+            {msg.next}
+          </button>
+          <button onClick={handlePhaseBack} className="w-full py-3 rounded-2xl bg-gray-800 hover:bg-gray-700 text-gray-400 font-medium text-sm transition-all">
+            ← 返回修改上一题
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 加载页 ──
+  if (appState === 'loading' && result) {
+    return <LoadingReport onDone={handleLoadingDone} />;
+  }
+
+  // ── 结果页 ──
+  if (appState === 'result' && result) {
     const desc = mbtiDescriptions[result];
     return <ResultCard mbti={result} description={desc} onRestart={handleRestart} />;
   }
 
+  // ── 题目页 ──
+  const circles = [1, 2, 3, 4, 5];
+  const canGoBack = currentIndex > 0;
+
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4 py-10">
-      {/* 顶部标题 */}
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-white tracking-wide">MBTI 人格测试</h1>
-        <p className="text-gray-400 text-sm mt-1">第 {currentIndex + 1} / {questions.length} 题</p>
+
+      {/* 顶部导航 */}
+      <div className="w-full max-w-md mb-2 flex justify-between items-center">
+        <button
+          onClick={handlePrev}
+          disabled={!canGoBack}
+          className={`text-xs px-3 py-1.5 rounded-xl transition-all
+            ${canGoBack ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-700 cursor-not-allowed'}`}
+        >
+          ← 上一题
+        </button>
+        <span className="text-gray-500 text-xs">{currentIndex + 1} / {totalQuestions}</span>
+        <span className="text-gray-600 text-xs">第 {phase} 阶段</span>
       </div>
 
-      {/* 进度条 */}
-      <div className="w-full max-w-md mb-8">
-        <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+      {/* 总进度条 */}
+      <div className="w-full max-w-md mb-6">
+        <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
           <div
             className="h-full bg-violet-500 rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }}
@@ -84,38 +191,66 @@ export default function MbtiTest() {
       </div>
 
       {/* 题目卡片 */}
-      <div className="w-full max-w-md bg-gray-900 rounded-2xl p-6 shadow-xl mb-6">
-        <p className="text-white text-lg font-medium leading-relaxed text-center">
+      <div className="w-full max-w-md bg-gray-900 rounded-2xl p-6 shadow-xl mb-4">
+        <p className="text-white text-lg font-medium leading-relaxed text-center mb-4">
           {currentQuestion.text}
+        </p>
+        <p className="text-gray-500 text-xs leading-relaxed text-center border-t border-gray-800 pt-4">
+          💭 {currentQuestion.hint}
         </p>
       </div>
 
-      {/* 选项 */}
-      <div className="w-full max-w-md flex flex-col gap-3">
-        {(['A', 'B'] as Answer[]).map((choice) => {
-          const text = choice === 'A' ? currentQuestion.aChoice : currentQuestion.bChoice;
-          const isSelected = selected === choice;
+      {/* A / B 标签 */}
+      <div className="w-full max-w-md flex justify-between items-center mb-3 px-1">
+        <span className="text-sm text-gray-300 font-medium">{currentQuestion.aLabel}</span>
+        <span className="text-sm text-gray-300 font-medium">{currentQuestion.bLabel}</span>
+      </div>
+
+      {/* 圆圈选择器 */}
+      <div className="w-full max-w-md flex justify-between items-center px-2 mb-2">
+        {circles.map((val) => {
+          const isSelected = selected === val || (answers[currentQuestion.id] === val && selected === null);
+
+          const sizeClass =
+            val === 1 || val === 5 ? 'w-14 h-14' :
+            val === 2 || val === 4 ? 'w-10 h-10' :
+            'w-8 h-8';
+
+          const borderColor =
+            val <= 2
+              ? isSelected ? 'border-green-400 bg-green-400' : 'border-green-700'
+              : val >= 4
+              ? isSelected ? 'border-violet-400 bg-violet-400' : 'border-violet-700'
+              : isSelected ? 'border-gray-400 bg-gray-400' : 'border-gray-600';
+
+          const isMiddle = val === 3;
+
           return (
             <button
-              key={choice}
-              onClick={() => handleSelect(choice)}
-              className={`w-full rounded-2xl px-5 py-4 text-left text-sm font-medium transition-all duration-200 border
-                ${isSelected
-                  ? 'bg-violet-600 border-violet-500 text-white scale-[0.98]'
-                  : 'bg-gray-900 border-gray-700 text-gray-200 hover:border-violet-500 hover:bg-gray-800'
-                }`}
+              key={val}
+              onClick={() => handleSelect(val)}
+              className={`${sizeClass} rounded-full border-2 transition-all duration-200 flex flex-col items-center justify-center gap-0.5
+                ${borderColor}
+                ${isSelected ? 'scale-110' : 'hover:scale-105 hover:opacity-80'}
+              `}
             >
-              <span className="text-violet-400 font-bold mr-2">{choice}.</span>
-              {text}
+              {isSelected ? (
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : isMiddle ? (
+                <span className="text-gray-400 text-xs font-medium leading-tight text-center">都有</span>
+              ) : null}
             </button>
           );
         })}
       </div>
 
-      {/* 维度提示 */}
-      <p className="mt-6 text-gray-600 text-xs">
-        当前维度：{currentQuestion.dimension[0]} vs {currentQuestion.dimension[1]}
-      </p>
+      {/* A / B 方向说明 */}
+      <div className="w-full max-w-md flex justify-between px-3">
+        <span className="text-gray-600 text-xs">← 更像 A</span>
+        <span className="text-gray-600 text-xs">更像 B →</span>
+      </div>
     </div>
   );
 }
