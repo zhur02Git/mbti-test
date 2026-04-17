@@ -11,16 +11,16 @@ export default function HomeScreen() {
   const [gender, setGender] = useState<Gender>(null);
   const [ageGroup, setAgeGroup] = useState<AgeGroup>(null);
   const [debugMode, setDebugMode] = useState(false);
+  const [debugPro, setDebugPro] = useState(false);
 
   if (started) {
-    return <MbtiTest debugMode={debugMode} />;
+    return <MbtiTest debugMode={debugMode} debugPro={debugPro} />;
   }
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
 
-        {/* 标题 */}
         <div className="text-center mb-10">
           <div className="text-5xl mb-4">🧠</div>
           <h1 className="text-3xl font-black text-white tracking-wide mb-2">MBTI 人格测试</h1>
@@ -77,35 +77,34 @@ export default function HomeScreen() {
           </div>
         </div>
 
-        {/* 开始测试按钮 */}
+        {/* 开始测试 */}
         <button
-          onClick={() => {
-            setDebugMode(false);
-            setStarted(true);
-          }}
+          onClick={() => { setDebugMode(false); setDebugPro(false); setStarted(true); }}
           className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-base transition-all mb-3"
         >
           开始测试 →
         </button>
 
-        {/* 测试说明 */}
         <div className="flex justify-center gap-4 text-gray-600 text-xs mb-8">
           <span>📝 100道题</span>
           <span>⏱ 约10分钟</span>
           <span>🔒 隐私保护</span>
         </div>
 
-        {/* 调试按钮（分隔线） */}
-        <div className="border-t border-gray-800 pt-6">
+        {/* 调试区域 */}
+        <div className="border-t border-gray-800 pt-6 space-y-2">
           <p className="text-gray-700 text-xs text-center mb-3">— 开发调试 —</p>
           <button
-            onClick={() => {
-              setDebugMode(true);
-              setStarted(true);
-            }}
+            onClick={() => { setDebugMode(true); setDebugPro(false); setStarted(true); }}
             className="w-full py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 border border-gray-700 text-gray-500 font-medium text-sm transition-all"
           >
-            🛠 跳过题目，直接看报告
+            🛠 跳过题目，查看免费版报告
+          </button>
+          <button
+            onClick={() => { setDebugMode(true); setDebugPro(true); setStarted(true); }}
+            className="w-full py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 border border-violet-800 text-violet-500 font-medium text-sm transition-all"
+          >
+            ✨ 跳过题目，直接查看专业版报告
           </button>
         </div>
 

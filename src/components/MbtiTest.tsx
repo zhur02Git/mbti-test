@@ -49,13 +49,19 @@ const PHASE_MESSAGES = {
   },
 };
 
-export default function MbtiTest({ debugMode = false }: { debugMode?: boolean }) {
+export default function MbtiTest({ debugMode = false, debugPro = false }: { debugMode?: boolean; debugPro?: boolean }) {
+  const initType = debugMode ? randomType() : null;
   const [appState, setAppState] = useState<AppState>(debugMode ? 'result' : 'test');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [result, setResult] = useState<string | null>(debugMode ? randomType() : null);
+  const [result, setResult] = useState<string | null>(initType);
   const [selected, setSelected] = useState<number | null>(null);
   const [phase, setPhase] = useState<Phase>(1);
+
+  // 专业版调试：直接设置 localStorage
+  if (debugPro && typeof window !== 'undefined') {
+    localStorage.setItem('mbti_pro_unlocked', 'true');
+  }
 
   const currentQuestion = questions[currentIndex];
   const totalQuestions = questions.length;
@@ -124,7 +130,6 @@ export default function MbtiTest({ debugMode = false }: { debugMode?: boolean })
     setAppState('test');
   }
 
-  // ── 阶段过渡页 ──
   if (appState === 'phase-transition') {
     const msg = PHASE_MESSAGES[phase as 1 | 2];
     return (
@@ -154,18 +159,15 @@ export default function MbtiTest({ debugMode = false }: { debugMode?: boolean })
     );
   }
 
-  // ── 加载页 ──
   if (appState === 'loading' && result) {
     return <LoadingReport onDone={handleLoadingDone} />;
   }
 
-  // ── 结果页 ──
   if (appState === 'result' && result) {
     const desc = mbtiDescriptions[result];
     return <ResultCard mbti={result} description={desc} onRestart={handleRestart} />;
   }
 
-  // ── 题目页 ──
   const canGoBack = currentIndex > 0;
   const circles = [
     { val: 1, label: null },
@@ -177,8 +179,6 @@ export default function MbtiTest({ debugMode = false }: { debugMode?: boolean })
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4 py-10">
-
-      {/* 顶部导航 */}
       <div className="w-full max-w-md mb-2 flex justify-between items-center">
         <button
           onClick={handlePrev}
@@ -192,37 +192,27 @@ export default function MbtiTest({ debugMode = false }: { debugMode?: boolean })
         <span className="text-gray-600 text-xs">第 {phase} 阶段</span>
       </div>
 
-      {/* 总进度条 */}
       <div className="w-full max-w-md mb-6">
         <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-violet-500 rounded-full transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
+          <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
         </div>
       </div>
 
-      {/* 题目卡片 */}
       <div className="w-full max-w-md bg-gray-900 rounded-2xl p-6 shadow-xl mb-4">
-        <p className="text-white text-lg font-medium leading-relaxed text-center mb-4">
-          {currentQuestion.text}
-        </p>
+        <p className="text-white text-lg font-medium leading-relaxed text-center mb-4">{currentQuestion.text}</p>
         <p className="text-gray-500 text-xs leading-relaxed text-center border-t border-gray-800 pt-4">
           💭 {currentQuestion.hint}
         </p>
       </div>
 
-      {/* A / B 标签 */}
       <div className="w-full max-w-md flex justify-between items-center mb-3 px-1">
         <span className="text-sm text-gray-300 font-medium">{currentQuestion.aLabel}</span>
         <span className="text-sm text-gray-300 font-medium">{currentQuestion.bLabel}</span>
       </div>
 
-      {/* 圆圈选择器 */}
       <div className="w-full max-w-md flex justify-between items-center px-2 mb-2">
         {circles.map(({ val, label }) => {
           const isSelected = selected === val || (answers[currentQuestion.id] === val && selected === null);
-
           const borderColor =
             val <= 2
               ? isSelected ? 'border-green-400 bg-green-400' : 'border-green-700'
@@ -235,9 +225,7 @@ export default function MbtiTest({ debugMode = false }: { debugMode?: boolean })
               key={val}
               onClick={() => handleSelect(val)}
               className={`w-14 h-14 rounded-full border-2 transition-all duration-200 flex flex-col items-center justify-center
-                ${borderColor}
-                ${isSelected ? 'scale-110' : 'hover:scale-105 hover:opacity-80'}
-              `}
+                ${borderColor} ${isSelected ? 'scale-110' : 'hover:scale-105 hover:opacity-80'}`}
             >
               {isSelected ? (
                 <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -251,7 +239,6 @@ export default function MbtiTest({ debugMode = false }: { debugMode?: boolean })
         })}
       </div>
 
-      {/* A / B 方向说明 */}
       <div className="w-full max-w-md flex justify-between px-3">
         <span className="text-gray-600 text-xs">← 更像 A</span>
         <span className="text-gray-600 text-xs">更像 B →</span>
