@@ -29,6 +29,7 @@ interface Description {
 
 interface Props {
   mbti: string;
+  gender: string;
   description: Description;
   onRestart: () => void;
 }
@@ -52,12 +53,29 @@ const gradientMap: Record<string, string> = {
   'from-orange-900 to-yellow-700': 'linear-gradient(to bottom, #7c2d12, #a16207)',
 };
 
-export default function ResultCard({ mbti, description, onRestart }: Props) {
+const titleMap: Record<string, string> = {
+  'INTJ': '建筑师／战略家',
+  'INTP': '逻辑学家／思想家',
+  'ENTJ': '指挥官／领导者',
+  'ENTP': '辩论家／创新者',
+  'INFJ': '提倡者／咨询师',
+  'INFP': '调停者／理想主义者',
+  'ENFJ': '主人公／教育家',
+  'ENFP': '竞选者／追梦人',
+  'ISTJ': '物流师／务实者',
+  'ISFJ': '守卫者／守护者',
+  'ESTJ': '总经理／管理者',
+  'ESFJ': '执政官／社交达人',
+  'ISTP': '鉴赏家／巧匠',
+  'ISFP': '探险家／艺术家',
+  'ESTP': '企业家／行动派',
+  'ESFP': '表演者／快乐达人',
+};
+
+export default function ResultCard({ mbti, gender, description, onRestart }: Props) {
   const [email, setEmail] = useState('');
   const [emailStatus, setEmailStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [emailError, setEmailError] = useState('');
-
-  const avatarUrl = `https://api.dicebear.com/8.x/adventurer/svg?seed=${description.avatarSeed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 
   const fortuneScores = [
     { label: '事业运', value: 78 + (mbti.charCodeAt(0) % 15) },
@@ -75,57 +93,34 @@ export default function ResultCard({ mbti, description, onRestart }: Props) {
       score: mbti[0] === 'E' ? 72 + (mbti.charCodeAt(0) % 20) : 72 + (mbti.charCodeAt(0) % 20),
       desc: explanation.ei, 
       color: 'bg-blue-500',
-      ends: ['E', 'I']
+      ends: ['E', 'I'],
+      index: 0
     },
     { 
       label: mbti[1] === 'S' ? '实感 S' : '直觉 N', 
       score: mbti[1] === 'S' ? 70 + (mbti.charCodeAt(1) % 22) : 70 + (mbti.charCodeAt(1) % 22),
       desc: explanation.sn, 
       color: 'bg-green-500',
-      ends: ['S', 'N']
+      ends: ['S', 'N'],
+      index: 1
     },
     { 
       label: mbti[2] === 'T' ? '思考 T' : '情感 F', 
       score: mbti[2] === 'T' ? 68 + (mbti.charCodeAt(2) % 24) : 68 + (mbti.charCodeAt(2) % 24),
       desc: explanation.tf, 
       color: 'bg-violet-500',
-      ends: ['T', 'F']
+      ends: ['T', 'F'],
+      index: 2
     },
     { 
       label: mbti[3] === 'J' ? '判断 J' : '知觉 P', 
       score: mbti[3] === 'J' ? 65 + (mbti.charCodeAt(3) % 25) : 65 + (mbti.charCodeAt(3) % 25),
       desc: explanation.jp, 
       color: 'bg-pink-500',
-      ends: ['J', 'P']
+      ends: ['J', 'P'],
+      index: 3
     },
   ];
-
-  async function handleSendEmail() {
-    if (!email.trim() || emailStatus === 'loading') return;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError('请输入正确的邮箱地址');
-      return;
-    }
-    setEmailStatus('loading');
-    setEmailError('');
-    try {
-      const res = await fetch('/api/send-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), mbti }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setEmailStatus('success');
-      } else {
-        setEmailStatus('error');
-        setEmailError(data.error || '发送失败，请重试');
-      }
-    } catch {
-      setEmailStatus('error');
-      setEmailError('网络错误，请重试');
-    }
-  }
 
   const getEnglishLabel = (char: string): string => {
     switch(char) {
@@ -155,18 +150,181 @@ export default function ResultCard({ mbti, description, onRestart }: Props) {
     }
   };
 
+  const getDisplayScore = (dim: typeof dimensions[0]): number => {
+    if (mbti[dim.index] === dim.ends[0]) {
+      return 100 - dim.score;
+    }
+    return dim.score;
+  };
+
+const getProgressBarWidth = (dim: typeof dimensions[0]): number => {
+    // 进度条根据显示的百分比调整
+    return getDisplayScore(dim);
+  };
+
+  function generateReportHtml(): string {
+    return `<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>你的 ${mbti} 专业人格报告</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #030712; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; color: white; padding: 24px 16px 48px; }
+  .container { max-width: 600px; margin: 0 auto; }
+  .header { background: linear-gradient(to bottom, #4c1d95, #6d28d9); border-radius: 20px; padding: 32px 24px; text-align: center; margin-bottom: 24px; }
+  .avatar { width: 100px; height: 100px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.2); margin: 0 auto 12px; overflow: hidden; }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .type-name { font-size: 48px; font-weight: 900; color: white; letter-spacing: 6px; }
+  .type-title { font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.9); margin-top: 4px; }
+  .rarity { display: inline-block; margin-top: 8px; padding: 3px 14px; border-radius: 999px; background: rgba(255,255,255,0.1); font-size: 12px; color: rgba(255,255,255,0.7); }
+  .traits { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; justify-content: center; }
+  .trait { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); }
+  .tagline { margin-top: 16px; font-size: 12px; color: rgba(255,255,255,0.6); font-style: italic; }
+  .card { background: #111827; border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 15px; font-weight: 700; color: white; margin-bottom: 4px; }
+  .card-sub { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+  .dim-row { margin-bottom: 16px; }
+  .dim-label { font-weight: 600; color: white; margin-bottom: 4px; }
+  .dim-bar { height: 8px; background: #1f2937; border-radius: 999px; overflow: hidden; margin-bottom: 4px; }
+  .dim-fill { height: 100%; background: linear-gradient(to right, #8b5cf6, #ec4899); border-radius: 999px; }
+  .dim-ends { display: flex; justify-content: space-between; font-size: 11px; color: #9ca3af; margin-bottom: 8px; }
+  .dim-desc { font-size: 12px; color: #9ca3af; line-height: 1.6; }
+  .section { margin-bottom: 16px; }
+  .section-title { font-size: 13px; font-weight: 600; color: white; margin: 12px 0 8px; }
+  .item { font-size: 12px; color: #d1d5db; margin-bottom: 8px; line-height: 1.6; }
+  .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0; }
+  .footer { text-align: center; padding: 16px; color: #374151; font-size: 12px; }
+  .tag { display: inline-block; padding: 6px 12px; border-radius: 8px; background: rgba(109,40,217,0.3); color: #ddd6fe; font-size: 12px; margin: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="avatar"><img src="https://api.dicebear.com/8.x/adventurer/svg?seed=${mbti}" alt="${mbti}" /></div>
+    <div style="font-size:11px;letter-spacing:3px;color:rgba(255,255,255,0.6);margin-bottom:4px;">人格类型</div>
+    <div class="type-name">${mbti}</div>
+    <div class="type-title">${titleMap[mbti]}</div>
+    <div class="rarity">稀有度 ${description.rarity}</div>
+    <div class="traits">${description.traits.map(t => `<span class="trait">${t}</span>`).join('')}</div>
+    <div class="tagline">「${description.tagline}」</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🧠 四维度分析</div>
+    <div class="card-sub">根据你的答题倾向分析</div>
+    ${dimensions.map(dim => `
+      <div class="dim-row">
+        <div class="dim-label">${dim.label}</div>
+        <div class="dim-ends">
+          <span>${dim.ends[0]}</span>
+          <span>${dim.score}%</span>
+          <span>${dim.ends[1]}</span>
+        </div>
+        <div class="dim-bar"><div class="dim-fill" style="width:${dim.score}%"></div></div>
+        <div class="dim-desc">${dim.desc}</div>
+      </div>
+    `).join('')}
+  </div>
+
+  <div class="card">
+    <div class="card-title">💡 性格特点</div>
+    ${description.personality.map((p, i) => `<div class="item"><strong>${i + 1}.</strong> ${p}</div>`).join('')}
+  </div>
+
+  <div class="card">
+    <div class="card-title">⭐ 相似名人</div>
+    ${description.celebrities.map(c => `
+      <div class="item">
+        <strong>${c.name}</strong> <span style="color:#9ca3af;">${c.era}</span><br>
+        ${c.desc}
+      </div>
+    `).join('')}
+  </div>
+
+  <div class="card">
+    <div class="card-title">💼 适合职业</div>
+    <div>${description.career.map(c => `<span class="tag">${c}</span>`).join('')}</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💕 爱情建议</div>
+    ${description.love.map(l => `<div class="item">♥ ${l}</div>`).join('')}
+  </div>
+
+  <div class="card">
+    <div class="card-title">🌍 最适合居住城市</div>
+    ${description.cities.map((c, i) => `<div class="item"><strong>${i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} ${c.city}</strong><br>${c.reason}</div>`).join('')}
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔮 2026年运势</div>
+    <div class="item">${description.fortune2026}</div>
+    <div class="divider"></div>
+    <div class="section-title">运势指数</div>
+    ${fortuneScores.map(item => `
+      <div class="item">
+        <strong>${item.label}:</strong> ${item.value}/100
+        <div class="dim-bar"><div class="dim-fill" style="width:${item.value}%"></div></div>
+      </div>
+    `).join('')}
+  </div>
+
+  <div class="footer">MBTI 人格测试报告 · 仅供参考娱乐</div>
+</div>
+</body>
+</html>`;
+  }
+
+  async function handleSendEmail() {
+    if (!email.trim() || emailStatus === 'loading') return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError('请输入正确的邮箱地址');
+      return;
+    }
+    setEmailStatus('loading');
+    setEmailError('');
+    try {
+      const res = await fetch('/api/send-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: email.trim(), 
+          mbti,
+          reportHtml: generateReportHtml(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailStatus('success');
+      } else {
+        setEmailStatus('error');
+        setEmailError(data.error || '发送失败，请重试');
+      }
+    } catch {
+      setEmailStatus('error');
+      setEmailError('网络错误，请重试');
+    }
+  }
+
   const HeaderCard = () => (
     <div className={`w-full rounded-2xl overflow-hidden bg-gradient-to-b ${description.bgGradient} mb-4`}>
-      <div className="flex flex-col items-center pt-8 pb-4 px-6">
-        <div className="w-28 h-28 rounded-full overflow-hidden mb-3" style={{ border: '4px solid rgba(255,255,255,0.2)' }}>
-          <img src={avatarUrl} alt={mbti} width={112} height={112} className="w-full h-full object-cover" />
-        </div>
+      <div className="w-full overflow-hidden">
+        <img 
+          src={`/avatars/${mbti}-${gender === 'male' ? 'M' : 'F'}.png`} 
+          alt={mbti} 
+          className="w-full h-auto object-cover"
+          onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+        />
+      </div>
+      <div className="flex flex-col items-center pt-6 pb-4 px-6">
         <div className="text-xs tracking-widest text-white/60 mb-1">人格类型</div>
         <div className="text-5xl font-black text-white tracking-wider">{mbti}</div>
-        <div className="text-xl font-bold text-white/90 mt-1">{description.title}</div>
+        <div className="text-lg font-bold text-white/90 mt-1">{titleMap[mbti] || description.title}</div>
         <div className="mt-2 px-3 py-1 rounded-full bg-white/10 text-white/70 text-xs">稀有度 {description.rarity}</div>
       </div>
-      <div className="px-6 pb-4 flex flex-wrap gap-2">
+      <div className="px-6 pb-4 flex flex-wrap gap-2 justify-center">
         {description.traits.map((trait, i) => (
           <span key={i} className="text-xs px-2 py-1 rounded-full bg-white/10 text-white/80">{trait}</span>
         ))}
@@ -189,20 +347,20 @@ export default function ResultCard({ mbti, description, onRestart }: Props) {
         {/* 四维度分析 */}
         <div className="bg-gray-900 rounded-2xl p-5 mb-4">
           <h3 className="text-white font-bold text-sm mb-4">🧠 四维度分析</h3>
-          {dimensions.map((dim, i) => (
-            <div key={i} className="mb-6 last:mb-0">
+          {dimensions.map((dim) => (
+            <div key={dim.index} className="mb-6 last:mb-0">
               <div className="text-white font-semibold text-sm mb-3">{dim.label}</div>
               
               <div className="mb-3">
                 <div className="flex justify-between items-start text-xs text-gray-400 mb-2">
                   <div className="text-left">
-                    <div className="font-semibold text-gray-300">{dim.ends[0]}</div>
+                    <div className={`font-semibold ${mbti[dim.index] === dim.ends[0] ? 'text-violet-400' : 'text-gray-300'}`}>{dim.ends[0]}</div>
                     <div className="text-xs text-gray-500">{getEnglishLabel(dim.ends[0])}</div>
                     <div className="text-xs text-gray-400">{getChineseLabel(dim.ends[0])}</div>
                   </div>
-                  <span className="font-semibold text-gray-300">{dim.score}%</span>
+                  <span className="font-semibold text-gray-300">{getDisplayScore(dim)}%</span>
                   <div className="text-right">
-                    <div className="font-semibold text-gray-300">{dim.ends[1]}</div>
+                    <div className={`font-semibold ${mbti[dim.index] === dim.ends[1] ? 'text-violet-400' : 'text-gray-300'}`}>{dim.ends[1]}</div>
                     <div className="text-xs text-gray-500">{getEnglishLabel(dim.ends[1])}</div>
                     <div className="text-xs text-gray-400">{getChineseLabel(dim.ends[1])}</div>
                   </div>
@@ -210,18 +368,18 @@ export default function ResultCard({ mbti, description, onRestart }: Props) {
                 <div className="h-2 bg-gray-800 rounded-full overflow-hidden relative">
                   <div 
                     className={`h-full ${dim.color} rounded-full transition-all`} 
-                    style={{ width: `${dim.score}%` }} 
+                    style={{ width: `${getProgressBarWidth(dim)}%` }} 
                   />
                   <div 
                     className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full border-2 border-gray-700 flex-shrink-0"
-                    style={{ left: `calc(${dim.score}% - 6px)` }}
+                    style={{ left: `calc(${getProgressBarWidth(dim)}% - 6px)` }}
                   />
                 </div>
               </div>
               
               <p className="text-gray-400 text-xs leading-relaxed">{dim.desc}</p>
               
-              {i < dimensions.length - 1 && <div className="mt-4 h-px bg-gray-800" />}
+              {dimensions.indexOf(dim) < dimensions.length - 1 && <div className="mt-4 h-px bg-gray-800" />}
             </div>
           ))}
         </div>

@@ -3,13 +3,16 @@
 import { useState } from 'react';
 import MbtiTest from './MbtiTest';
 
+type Gender = 'male' | 'female' | null;
+
 export default function HomeScreen() {
   const [started, setStarted] = useState(false);
+  const [gender, setGender] = useState<Gender>(null);
   const [debugMode, setDebugMode] = useState(false);
   const [debugPro, setDebugPro] = useState(false);
 
   if (started) {
-    return <MbtiTest debugMode={debugMode} debugPro={debugPro} />;
+    return <MbtiTest gender={gender || 'male'} debugMode={debugMode} debugPro={debugPro} />;
   }
 
   return (
@@ -18,8 +21,8 @@ export default function HomeScreen() {
 
         {/* 标题 */}
         <div className="text-center mb-8">
-          <div className="text-5xl mb-4">🧠</div>
-          <h1 className="text-3xl font-black text-white tracking-wide mb-2">MBTI 人格测试</h1>
+          <div className="text-6xl font-black text-violet-500 mb-4 tracking-wider">MBTI</div>
+          <h1 className="text-3xl font-black text-white tracking-wide mb-2">人格测试</h1>
           <p className="text-gray-400 text-sm leading-relaxed">100道题，深度分析你的人格类型<br />专属报告 + AI解读 + 2026运势</p>
         </div>
 
@@ -43,11 +46,11 @@ export default function HomeScreen() {
               <div className="space-y-2 text-xs">
                 <div className="flex gap-2">
                   <span className="text-violet-400 font-bold min-w-12">E ↔ I</span>
-                  <span>内向/外向 (Extraversion ↔ Introversion)</span>
+                  <span>外向/内向 (Extraversion ↔ Introversion)</span>
                 </div>
                 <div className="flex gap-2">
                   <span className="text-violet-400 font-bold min-w-12">S ↔ N</span>
-                  <span>感知/直觉 (Sensing ↔ Intuition)</span>
+                  <span>实感/直觉 (Sensing ↔ Intuition)</span>
                 </div>
                 <div className="flex gap-2">
                   <span className="text-violet-400 font-bold min-w-12">T ↔ F</span>
@@ -55,7 +58,7 @@ export default function HomeScreen() {
                 </div>
                 <div className="flex gap-2">
                   <span className="text-violet-400 font-bold min-w-12">J ↔ P</span>
-                  <span>判断/知觉 (Judging ↔ Perceiving)</span>
+                  <span>判断/感知 (Judging ↔ Perceiving)</span>
                 </div>
               </div>
             </div>
@@ -70,10 +73,42 @@ export default function HomeScreen() {
           </div>
         </div>
 
+        {/* 性别选择 */}
+        <div className="mb-8">
+          <p className="text-gray-400 text-xs mb-3 tracking-wide font-semibold">选择你的性别</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setGender('male')}
+              className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all border
+                ${gender === 'male'
+                  ? 'bg-blue-600 border-blue-500 text-white'
+                  : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
+                }`}
+            >
+              ♂ 男性
+            </button>
+            <button
+              onClick={() => setGender('female')}
+              className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all border
+                ${gender === 'female'
+                  ? 'bg-pink-600 border-pink-500 text-white'
+                  : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
+                }`}
+            >
+              ♀ 女性
+            </button>
+          </div>
+        </div>
+
         {/* 开始测试 */}
         <button
           onClick={() => { setDebugMode(false); setDebugPro(false); setStarted(true); }}
-          className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-base transition-all mb-3"
+          disabled={!gender}
+          className={`w-full py-4 rounded-2xl text-white font-bold text-base transition-all mb-3
+            ${gender 
+              ? 'bg-violet-600 hover:bg-violet-500' 
+              : 'bg-gray-700 cursor-not-allowed opacity-50'
+            }`}
         >
           开始测试 →
         </button>
@@ -88,13 +123,13 @@ export default function HomeScreen() {
         <div className="border-t border-gray-800 pt-6 space-y-2">
           <p className="text-gray-700 text-xs text-center mb-3">— 开发调试 —</p>
           <button
-            onClick={() => { setDebugMode(true); setDebugPro(false); setStarted(true); }}
+            onClick={() => { setDebugMode(true); setDebugPro(false); setGender('male'); setStarted(true); }}
             className="w-full py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 border border-gray-700 text-gray-500 font-medium text-sm transition-all"
           >
             🛠 跳过题目，查看报告
           </button>
           <button
-            onClick={() => { setDebugMode(true); setDebugPro(true); setStarted(true); }}
+            onClick={() => { setDebugMode(true); setDebugPro(true); setGender('male'); setStarted(true); }}
             className="w-full py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 border border-violet-800 text-violet-500 font-medium text-sm transition-all"
           >
             ✨ 跳过题目，直接查看报告

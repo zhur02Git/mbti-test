@@ -49,7 +49,7 @@ const PHASE_MESSAGES = {
   },
 };
 
-export default function MbtiTest({ debugMode = false, debugPro = false }: { debugMode?: boolean; debugPro?: boolean }) {
+export default function MbtiTest({ gender = 'male', debugMode = false, debugPro = false }: { gender?: string; debugMode?: boolean; debugPro?: boolean }) {
   const initType = debugMode ? randomType() : null;
   const [appState, setAppState] = useState<AppState>(debugMode ? 'result' : 'test');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -164,7 +164,7 @@ export default function MbtiTest({ debugMode = false, debugPro = false }: { debu
 
   if (appState === 'result' && result) {
     const desc = mbtiDescriptions[result];
-    return <ResultCard mbti={result} description={desc} onRestart={handleRestart} />;
+return <ResultCard mbti={result} gender={gender} description={desc} onRestart={handleRestart} />;
   }
 
   const canGoBack = currentIndex > 0;
