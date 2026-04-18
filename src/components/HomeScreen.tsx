@@ -3,13 +3,8 @@
 import { useState } from 'react';
 import MbtiTest from './MbtiTest';
 
-type Gender = 'male' | 'female' | 'other' | null;
-type AgeGroup = 'under18' | '18-24' | '25-34' | '35-44' | '45+' | null;
-
 export default function HomeScreen() {
   const [started, setStarted] = useState(false);
-  const [gender, setGender] = useState<Gender>(null);
-  const [ageGroup, setAgeGroup] = useState<AgeGroup>(null);
   const [debugMode, setDebugMode] = useState(false);
   const [debugPro, setDebugPro] = useState(false);
 
@@ -18,62 +13,60 @@ export default function HomeScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-start px-4 py-8">
       <div className="w-full max-w-sm">
 
-        <div className="text-center mb-10">
+        {/* 标题 */}
+        <div className="text-center mb-8">
           <div className="text-5xl mb-4">🧠</div>
           <h1 className="text-3xl font-black text-white tracking-wide mb-2">MBTI 人格测试</h1>
           <p className="text-gray-400 text-sm leading-relaxed">100道题，深度分析你的人格类型<br />专属报告 + AI解读 + 2026运势</p>
         </div>
 
-        {/* 性别选择 */}
-        <div className="mb-6">
-          <p className="text-gray-400 text-xs mb-3 tracking-wide">你的性别</p>
-          <div className="flex gap-2">
-            {[
-              { key: 'male', label: '♂ 男生' },
-              { key: 'female', label: '♀ 女生' },
-              { key: 'other', label: '⚧ 其他' },
-            ].map((item) => (
-              <button
-                key={item.key}
-                onClick={() => setGender(item.key as Gender)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all border
-                  ${gender === item.key
-                    ? 'bg-violet-600 border-violet-500 text-white'
-                    : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
-                  }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* MBTI 介绍（默认展开） */}
+        <div className="mb-8 bg-gray-900 rounded-2xl p-5 border border-gray-800">
+          <h2 className="text-white font-bold text-base mb-4 flex items-center gap-2">
+            <span>ℹ️</span> 什么是 MBTI？
+          </h2>
+          
+          <div className="space-y-4 text-gray-300 text-sm">
+            {/* 简介 */}
+            <div>
+              <p className="leading-relaxed">
+                MBTI（迈尔斯-布里格斯人格分类法）是全球最受欢迎的人格评估工具，通过 4 个维度将人格分为 16 种类型。
+              </p>
+            </div>
 
-        {/* 年龄选择 */}
-        <div className="mb-8">
-          <p className="text-gray-400 text-xs mb-3 tracking-wide">你的年龄段</p>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { key: 'under18', label: '18岁以下' },
-              { key: '18-24', label: '18-24岁' },
-              { key: '25-34', label: '25-34岁' },
-              { key: '35-44', label: '35-44岁' },
-              { key: '45+', label: '45岁以上' },
-            ].map((item) => (
-              <button
-                key={item.key}
-                onClick={() => setAgeGroup(item.key as AgeGroup)}
-                className={`py-2.5 rounded-xl text-xs font-medium transition-all border
-                  ${ageGroup === item.key
-                    ? 'bg-violet-600 border-violet-500 text-white'
-                    : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
-                  }`}
-              >
-                {item.label}
-              </button>
-            ))}
+            {/* 4 个维度 */}
+            <div className="border-t border-gray-800 pt-3">
+              <p className="text-gray-400 text-xs mb-3 font-semibold">4 个维度：</p>
+              <div className="space-y-2 text-xs">
+                <div className="flex gap-2">
+                  <span className="text-violet-400 font-bold min-w-12">E ↔ I</span>
+                  <span>内向/外向 (Extraversion ↔ Introversion)</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-violet-400 font-bold min-w-12">S ↔ N</span>
+                  <span>感知/直觉 (Sensing ↔ Intuition)</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-violet-400 font-bold min-w-12">T ↔ F</span>
+                  <span>思考/情感 (Thinking ↔ Feeling)</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-violet-400 font-bold min-w-12">J ↔ P</span>
+                  <span>判断/知觉 (Judging ↔ Perceiving)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 历史 */}
+            <div className="border-t border-gray-800 pt-3">
+              <p className="text-gray-400 text-xs mb-2 font-semibold">发明与历史：</p>
+              <p className="text-xs leading-relaxed">
+                由美国心理学家 <span className="text-violet-300">Isabel Briggs Myers</span> 和其母亲 Katharine Cook Briggs 在 1942 年开发，基于荣格心理学理论，已被全球 9000+ 万人使用。
+              </p>
+            </div>
           </div>
         </div>
 
@@ -98,13 +91,13 @@ export default function HomeScreen() {
             onClick={() => { setDebugMode(true); setDebugPro(false); setStarted(true); }}
             className="w-full py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 border border-gray-700 text-gray-500 font-medium text-sm transition-all"
           >
-            🛠 跳过题目，查看免费版报告
+            🛠 跳过题目，查看报告
           </button>
           <button
             onClick={() => { setDebugMode(true); setDebugPro(true); setStarted(true); }}
             className="w-full py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 border border-violet-800 text-violet-500 font-medium text-sm transition-all"
           >
-            ✨ 跳过题目，直接查看专业版报告
+            ✨ 跳过题目，直接查看报告
           </button>
         </div>
 

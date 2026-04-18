@@ -58,7 +58,6 @@ export default function MbtiTest({ debugMode = false, debugPro = false }: { debu
   const [selected, setSelected] = useState<number | null>(null);
   const [phase, setPhase] = useState<Phase>(1);
 
-  // 专业版调试：直接设置 localStorage
   if (debugPro && typeof window !== 'undefined') {
     localStorage.setItem('mbti_pro_unlocked', 'true');
   }
@@ -169,13 +168,6 @@ export default function MbtiTest({ debugMode = false, debugPro = false }: { debu
   }
 
   const canGoBack = currentIndex > 0;
-  const circles = [
-    { val: 1, label: null },
-    { val: 2, label: null },
-    { val: 3, label: '都有' },
-    { val: 4, label: null },
-    { val: 5, label: null },
-  ];
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4 py-10">
@@ -198,48 +190,61 @@ export default function MbtiTest({ debugMode = false, debugPro = false }: { debu
         </div>
       </div>
 
-      <div className="w-full max-w-md bg-gray-900 rounded-2xl p-6 shadow-xl mb-4">
+      <div className="w-full max-w-md bg-gray-900 rounded-2xl p-6 shadow-xl mb-6">
         <p className="text-white text-lg font-medium leading-relaxed text-center mb-4">{currentQuestion.text}</p>
-        <p className="text-gray-500 text-xs leading-relaxed text-center border-t border-gray-800 pt-4">
+        <p className="text-white text-xs leading-relaxed text-center border-t border-gray-800 pt-4">
           💭 {currentQuestion.hint}
         </p>
       </div>
 
-      <div className="w-full max-w-md flex justify-between items-center mb-3 px-1">
-        <span className="text-sm text-gray-300 font-medium">{currentQuestion.aLabel}</span>
-        <span className="text-sm text-gray-300 font-medium">{currentQuestion.bLabel}</span>
+      {/* 圆圈布局：左右最大，中间三个是一半大 */}
+      <div className="w-full max-w-md mb-6">
+        {/* 顶部标签 */}
+        <div className="w-full flex justify-between items-start mb-4 px-2">
+          <span className="text-sm text-gray-300 font-medium flex-1 text-left">{currentQuestion.aLabel}</span>
+          <span className="text-sm text-gray-300 font-medium flex-1 text-center">都有</span>
+          <span className="text-sm text-gray-300 font-medium flex-1 text-right">{currentQuestion.bLabel}</span>
+        </div>
+
+        {/* 圆圈 */}
+        <div className="w-full flex justify-between items-center gap-2">
+          {[1, 2, 3, 4, 5].map((val) => {
+            const isSelected = selected === val || (answers[currentQuestion.id] === val && selected === null);
+            
+            // 左右圆圈（1,5）最大，中间三个（2,3,4）是一半
+            const isLargeCircle = val === 1 || val === 5;
+            const sizeClass = isLargeCircle ? 'w-14 h-14' : 'w-11 h-11';
+            
+            const borderColor =
+              val <= 2
+                ? isSelected ? 'border-green-400 bg-green-400' : 'border-green-700'
+                : val >= 4
+                ? isSelected ? 'border-violet-400 bg-violet-400' : 'border-violet-700'
+                : isSelected ? 'border-gray-400 bg-gray-400' : 'border-gray-600';
+
+            return (
+              <button
+                key={val}
+                onClick={() => handleSelect(val)}
+                className={`${sizeClass} rounded-full border-2 transition-all duration-200 flex flex-col items-center justify-center flex-shrink-0
+                  ${borderColor} ${isSelected ? 'scale-110' : 'hover:scale-105 hover:opacity-80'}`}
+              >
+                {isSelected && isLargeCircle ? (
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : isSelected && !isLargeCircle ? (
+                  <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="w-full max-w-md flex justify-between items-center px-2 mb-2">
-        {circles.map(({ val, label }) => {
-          const isSelected = selected === val || (answers[currentQuestion.id] === val && selected === null);
-          const borderColor =
-            val <= 2
-              ? isSelected ? 'border-green-400 bg-green-400' : 'border-green-700'
-              : val >= 4
-              ? isSelected ? 'border-violet-400 bg-violet-400' : 'border-violet-700'
-              : isSelected ? 'border-gray-400 bg-gray-400' : 'border-gray-600';
-
-          return (
-            <button
-              key={val}
-              onClick={() => handleSelect(val)}
-              className={`w-14 h-14 rounded-full border-2 transition-all duration-200 flex flex-col items-center justify-center
-                ${borderColor} ${isSelected ? 'scale-110' : 'hover:scale-105 hover:opacity-80'}`}
-            >
-              {isSelected ? (
-                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : label ? (
-                <span className="text-gray-400 text-xs font-medium">{label}</span>
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="w-full max-w-md flex justify-between px-3">
+      <div className="w-full max-w-md flex justify-between px-2">
         <span className="text-gray-600 text-xs">← 更像 A</span>
         <span className="text-gray-600 text-xs">更像 B →</span>
       </div>

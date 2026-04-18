@@ -16,18 +16,20 @@ export default function PayPage() {
 
     try {
       const trimmedCode = code.trim().toUpperCase();
+      console.log('查询验证码:', trimmedCode);
 
-      const { data, error } = await supabase
+  const { data: rows, error } = await supabase
         .from('payment_codes')
         .select('*')
-        .eq('code', trimmedCode)
-        .single();
+        .eq('code', trimmedCode);
 
-      if (error || !data) {
+      if (error || !rows || rows.length === 0) {
         setStatus('error');
         setErrorMsg('验证码无效，请检查后重试');
         return;
       }
+
+      const data = rows[0];
 
        if (data.used && data.code !== 'MBTITEST') {
         setStatus('error');
