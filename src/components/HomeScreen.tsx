@@ -10,6 +10,8 @@ export default function HomeScreen() {
   const [gender, setGender] = useState<Gender>(null);
   const [debugMode, setDebugMode] = useState(false);
   const [debugPro, setDebugPro] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
+  const [debugCode, setDebugCode] = useState('');
 
   if (started) {
     return <MbtiTest gender={gender || 'male'} debugMode={debugMode} debugPro={debugPro} />;
@@ -50,7 +52,7 @@ export default function HomeScreen() {
                 </div>
                 <div className="flex gap-2">
                   <span className="text-violet-400 font-bold min-w-12">S ↔ N</span>
-                  <span>实感/直觉 (Sensing ↔ Intuition)</span>
+                  <span>感觉/直觉 (Sensing ↔ Intuition)</span>
                 </div>
                 <div className="flex gap-2">
                   <span className="text-violet-400 font-bold min-w-12">T ↔ F</span>
@@ -119,22 +121,66 @@ export default function HomeScreen() {
           <span>🔒 隐私保护</span>
         </div>
 
+        {/* 密码输入 */}
+        {!showDebug && (
+          <div className="border-t border-gray-800 pt-6">
+            <p className="text-gray-700 text-xs text-center mb-3">开发者模式</p>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={debugCode}
+                onChange={(e) => setDebugCode(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && debugCode === 'Rui') {
+                    setShowDebug(true);
+                    setDebugCode('');
+                  }
+                }}
+                placeholder="输入密码"
+                className="flex-1 bg-gray-800 text-white text-xs rounded-xl px-3 py-2 outline-none border border-gray-700 focus:border-violet-500"
+              />
+              <button
+                onClick={() => {
+                  if (debugCode === 'Rui') {
+                    setShowDebug(true);
+                    setDebugCode('');
+                  }
+                }}
+                className="px-3 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 text-gray-400 text-xs font-medium transition-all"
+              >
+                确认
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* 调试区域 */}
-        <div className="border-t border-gray-800 pt-6 space-y-2">
-          <p className="text-gray-700 text-xs text-center mb-3">— 开发调试 —</p>
-          <button
-            onClick={() => { setDebugMode(true); setDebugPro(false); setGender('male'); setStarted(true); }}
-            className="w-full py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 border border-gray-700 text-gray-500 font-medium text-sm transition-all"
-          >
-            🛠 跳过题目，查看报告
-          </button>
-          <button
-            onClick={() => { setDebugMode(true); setDebugPro(true); setGender('male'); setStarted(true); }}
-            className="w-full py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 border border-violet-800 text-violet-500 font-medium text-sm transition-all"
-          >
-            ✨ 跳过题目，直接查看报告
-          </button>
-        </div>
+        {showDebug && (
+          <div className="border-t border-gray-800 pt-6 space-y-2">
+            <p className="text-gray-700 text-xs text-center mb-3">— 开发调试 —</p>
+            <button
+              onClick={() => { setDebugMode(true); setDebugPro(false); setGender('male'); setStarted(true); }}
+              className="w-full py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 border border-gray-700 text-gray-500 font-medium text-sm transition-all"
+            >
+              🛠 跳过题目，查看报告1
+            </button>
+            <button
+              onClick={() => { setDebugMode(true); setDebugPro(true); setGender('male'); setStarted(true); }}
+              className="w-full py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 border border-violet-800 text-violet-500 font-medium text-sm transition-all"
+            >
+              ✨ 跳过题目，直接查看报告
+            </button>
+            <button
+              onClick={() => {
+                setShowDebug(false);
+                setDebugCode('');
+              }}
+              className="w-full py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 border border-gray-700 text-gray-500 font-medium text-sm transition-all"
+            >
+              关闭
+            </button>
+          </div>
+        )}
 
       </div>
     </div>
